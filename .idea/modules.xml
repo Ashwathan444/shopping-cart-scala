@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/inventory.iml" filepath="$PROJECT_DIR$/.idea/modules/inventory.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/inventory-api.iml" filepath="$PROJECT_DIR$/.idea/modules/inventory-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-cassandra.iml" filepath="$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-cassandra.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-kafka.iml" filepath="$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-kafka.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-service-locator.iml" filepath="$PROJECT_DIR$/.idea/modules/lagom-internal-meta-project-service-locator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shopping-cart.iml" filepath="$PROJECT_DIR$/.idea/modules/shopping-cart.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shopping-cart-api.iml" filepath="$PROJECT_DIR$/.idea/modules/shopping-cart-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shopping-cart-scala.iml" filepath="$PROJECT_DIR$/.idea/modules/shopping-cart-scala.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/shopping-cart-scala-build.iml" filepath="$PROJECT_DIR$/.idea/modules/shopping-cart-scala-build.iml" />
+    </modules>
+  </component>
+</project>
