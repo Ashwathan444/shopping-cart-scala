@@ -1,5 +1,7 @@
 target
 ideatarget
+
+.*
 .target
 bin
 .cache
