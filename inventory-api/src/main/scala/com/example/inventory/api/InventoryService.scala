@@ -34,8 +34,8 @@ trait InventoryService extends Service {
     named("inventory")
       .withCalls(
      //   restCall(Method.GET, "/inventory/:itemId", getItem _),
-        restCall(Method.GET, "/inventory", getAllItems _),
-        restCall(Method.PUT, "/inventory/:itemId", updateStock _),
+      //  restCall(Method.GET, "/inventory", getAllItems _),
+       // restCall(Method.PUT, "/inventory/:itemId", updateStock _),
         restCall(Method.POST, "/inventory", addItem _)
       )
       .withAutoAcl(true)

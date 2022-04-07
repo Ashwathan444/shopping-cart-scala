@@ -3,7 +3,6 @@ package com.example.inventory.impl
 import java.time.Instant
 
 import akka.Done
-import com.example.shoppingcart.api.ShoppingCartReport
 import com.example.inventory.api.InventoryItem
 import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
@@ -21,9 +20,9 @@ class InventoryRepository(database: Database) {
     def * = (itemId,quantity).mapTo[InventoryItem]
   }
 
-  val reportTable = TableQuery[InventoryTable]
+  val inventoryTable = TableQuery[InventoryTable]
 
-  def createTable() = reportTable.schema.createIfNotExists
+  def createTable() = inventoryTable.schema.createIfNotExists
 
   def findById(id: String): Future[Option[InventoryItem]] =
     database.run(findByIdQuery(id))
@@ -31,7 +30,7 @@ class InventoryRepository(database: Database) {
   def createItem(itemId: String,quantity: Int): DBIO[Done] = {
     findByIdQuery(itemId)
       .flatMap {
-        case None => reportTable += InventoryItem(itemId, quantity)
+        case None => inventoryTable += InventoryItem(itemId, quantity)
         case _    => DBIO.successful(Done)
       }
       .map(_ => Done)
@@ -41,7 +40,7 @@ class InventoryRepository(database: Database) {
   def addStock(itemId: String, q: Int): DBIO[Done] = {
     findByIdQuery(itemId)
       .flatMap {
-        case Some(item) => reportTable.insertOrUpdate(item.copy(quantity = item.quantity+q))
+        case Some(item) => inventoryTable.insertOrUpdate(item.copy(quantity = item.quantity+q))
         // if that happens we have a corrupted system
         // cart checkout can only happens for a existing cart
         case None => throw new RuntimeException(s"Didn't find item to update. CartID: $itemId")
@@ -51,7 +50,7 @@ class InventoryRepository(database: Database) {
   }
 
   private def findByIdQuery(cartId: String): DBIO[Option[InventoryItem]] =
-    reportTable
+    inventoryTable
       .filter(_.itemId === cartId)
       .result
       .headOption

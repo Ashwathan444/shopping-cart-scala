@@ -8,7 +8,7 @@ import com.example.inventory.impl.Inventory._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /**
@@ -19,6 +19,8 @@ class InventoryServiceImpl(
     persistentEntityRegistry: PersistentEntityRegistry,
     inventoryRepository: InventoryRepository,
 )(implicit ec: ExecutionContext) extends InventoryService {
+
+
 
   private def entityRef(itemId: String): EntityRef[InventoryCommand] =
     clusterSharding.entityRefFor(Inventory.typeKey, itemId)
@@ -42,5 +44,8 @@ class InventoryServiceImpl(
    */
   override def updateStock(itemId: String): ServiceCall[Quantity, Done] = ???
 
-  override def addItem(): ServiceCall[InventoryItem, Done] = ???
+  override def addItem(): ServiceCall[InventoryItem, Done] = ServiceCall { item =>
+    inventoryRepository.createItem(item.itemId,item.quantity)
+    Future.successful(Done)
+  }
 }
