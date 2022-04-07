@@ -5,8 +5,7 @@ organization in ThisBuild := "com.example"
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.5"
 
-ThisBuild / lagomKafkaEnabled := true
-ThisBuild / lagomKafkaAddress := "localhost:9093"
+
 
 val postgresDriver             = "org.postgresql"                % "postgresql"                                    % "42.2.18"
 val macwire                    = "com.softwaremill.macwire"     %% "macros"                                        % "2.3.7" % "provided"
@@ -16,7 +15,17 @@ val lagomScaladslAkkaDiscovery = "com.lightbend.lagom"          %% "lagom-scalad
 
 ThisBuild / scalacOptions ++= List("-encoding", "utf8", "-deprecation", "-feature", "-unchecked", "-Xfatal-warnings")
 
-def dockerSettings = Seq(
+def evictionSettings: Seq[Setting[_]] = Seq(
+  // This avoids a lot of dependency resolution warnings to be showed.
+  // They are not required in Lagom since we have a more strict whitelist
+  // of which dependencies are allowed. So it should be safe to not have
+  // the build logs polluted with evictions warnings.
+  evictionWarningOptions in update := EvictionWarningOptions.default
+    .withWarnTransitiveEvictions(false)
+    .withWarnDirectEvictions(false)
+)
+
+def dockerSettings = evictionSettings++Seq(
   dockerUpdateLatest := true,
   dockerBaseImage := getDockerBaseImage(),
   dockerUsername := sys.props.get("docker.username"),
@@ -76,6 +85,7 @@ lazy val inventory = (project in file("inventory"))
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceJdbc,
       lagomScaladslKafkaClient,
+      lagomScaladslKafkaBroker,
       lagomScaladslTestKit,
       macwire,
       scalaTest,
@@ -89,5 +99,9 @@ lazy val inventory = (project in file("inventory"))
 lagomCassandraEnabled in ThisBuild := false
 
 // Use Kafka server running in a docker container
-lagomKafkaEnabled in ThisBuild := false
-lagomKafkaPort in ThisBuild := 9092
+
+lagomKafkaCleanOnStart in ThisBuild := true
+lagomKafkaEnabled in ThisBuild := true
+lagomServicesPortRange in ThisBuild := PortRange(30000, 35000)
+
+

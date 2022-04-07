@@ -1,15 +1,21 @@
 package com.example.inventory.impl
 
-import com.lightbend.lagom.scaladsl.server._
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
-import play.api.libs.ws.ahc.AhcWSComponents
 import com.example.inventory.api.InventoryService
-import com.example.shoppingcart.api.ShoppingCartService
 import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
-import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaClientComponents
+import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
+import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
+import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
+import play.api.db.HikariCPComponents
+import play.api.libs.ws.ahc.AhcWSComponents
+import akka.cluster.sharding.typed.scaladsl.Entity
+import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
+
+import scala.concurrent.ExecutionContext
 
 class InventoryLoader extends LagomApplicationLoader {
+
   override def load(context: LagomApplicationContext): LagomApplication =
     new InventoryApplication(context) with AkkaDiscoveryComponents
 
@@ -19,14 +25,34 @@ class InventoryLoader extends LagomApplicationLoader {
   override def describeService = Some(readDescriptor[InventoryService])
 }
 
-abstract class InventoryApplication(context: LagomApplicationContext)
-    extends LagomApplication(context)
-    with LagomKafkaClientComponents
+trait InventoryComponents
+  extends LagomServerComponents
+    with SlickPersistenceComponents
+    with HikariCPComponents
     with AhcWSComponents {
 
-  // Bind the service that this server provides
-  override lazy val lagomServer = serverFor[InventoryService](wire[InventoryServiceImpl])
+  implicit def executionContext: ExecutionContext
 
-  // Bind the ShoppingcartService client
-  lazy val shoppingCartService = serviceClient.implement[ShoppingCartService]
+  // Bind the service that this server provides
+  override lazy val lagomServer: LagomServer =
+    serverFor[InventoryService](wire[InventoryServiceImpl])
+
+  // Register the JSON serializer registry
+  override lazy val jsonSerializerRegistry: JsonSerializerRegistry =
+    InventorySerializerRegistry
+
+  lazy val reportRepository: InventoryRepository =
+    wire[InventoryRepository]
+  readSide.register(wire[InventoryProcessor])
+
+  clusterSharding.init(
+    Entity(Inventory.typeKey) { entityContext =>
+      Inventory(entityContext)
+    }
+  )
 }
+
+abstract class InventoryApplication(context: LagomApplicationContext)
+  extends LagomApplication(context)
+    with InventoryComponents
+    with LagomKafkaComponents {}

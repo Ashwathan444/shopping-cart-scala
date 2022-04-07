@@ -17,6 +17,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.cluster.sharding.typed.scaladsl.EntityRef
+import org.slf4j.LoggerFactory
 
 /**
  * Implementation of the `ShoppingCartService`.
@@ -28,6 +29,7 @@ class ShoppingCartServiceImpl(
 )(implicit ec: ExecutionContext)
     extends ShoppingCartService {
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
   /**
    * Looks up the shopping cart entity for the given ID.
    */
@@ -99,8 +101,9 @@ class ShoppingCartServiceImpl(
     (tag, fromOffset) =>
       persistentEntityRegistry
         .eventStream(tag, fromOffset)
-        .filter(_.event.isInstanceOf[CartCheckedOut])
+        .filter(rp => rp.event.isInstanceOf[CartCheckedOut] || rp.event.isInstanceOf[ItemAdded])
         .mapAsync(4) { case EventStreamElement(id, _, offset) =>
+          logger.info(s"$tag message sent $offset")
           entityRef(id)
             .ask(reply => Get(reply))
             .map(cart => convertShoppingCart(id, cart) -> offset)

@@ -15,6 +15,7 @@ class ShoppingCartReportProcessor(readSide: SlickReadSide, repository: ShoppingC
       .builder[Event]("shopping-cart-report")
       .setGlobalPrepare(repository.createTable())
       .setEventHandler[ItemAdded] { envelope =>
+        println(s"$envelope added ")
         repository.createReport(envelope.entityId)
       }
       .setEventHandler[ItemRemoved] { envelope =>

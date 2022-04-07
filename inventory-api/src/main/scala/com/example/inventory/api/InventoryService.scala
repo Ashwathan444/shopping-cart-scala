@@ -9,6 +9,7 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer.JsValueMessageSe
 import play.api.libs.json.{Format, Json}
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
+import play.api.libs.json.OFormat.oFormatFromReadsAndOWrites
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable.Seq
@@ -24,15 +25,15 @@ trait InventoryService extends Service {
   /**
    * Get the inventory level for the given item id.
    */
-  def getItem(itemId: String): ServiceCall[NotUsed, Item]
+  def getItem(itemId: String): ServiceCall[NotUsed, Option[Quantity]]
 
-  def getAllItems(): ServiceCall[NotUsed, List[Item]]
+  def getAllItems(): ServiceCall[NotUsed, List[(String,Int)]]
   /**
    * Add inventory to the given item id.
    */
-  def updateStock(itemId: String): ServiceCall[Int, Done]
+  def updateStock(itemId: String): ServiceCall[Quantity, Done]
 
-  def addItem(itemId: String): ServiceCall[Item, Done]
+  def addItem(): ServiceCall[InventoryItem, Done]
 
 
   final override def descriptor = {
@@ -40,28 +41,30 @@ trait InventoryService extends Service {
 
     named("inventory")
       .withCalls(
-        restCall(Method.GET, "/items/:itemId", getItem _),
-        restCall(Method.GET, "/items", getAllItems _),
-        restCall(Method.PUT, "/items/:itemId", updateStock _),
-        restCall(Method.POST, "/items/:itemId", addItem _)
+        restCall(Method.GET, "/inventory/:itemId", getItem _),
+        restCall(Method.GET, "/inventory", getAllItems _),
+        restCall(Method.PUT, "/inventory/:itemId", updateStock _),
+        restCall(Method.POST, "/inventory", addItem _)
       )
       .withAutoAcl(true)
   }
 
-  case class Item(name: String, quantity: Int)
+  case class Quantity(quantity: Int)
 
-  object Item {
-    implicit val format: Format[Item] = Json.format
+  object Quantity{
+    implicit val format: Format[Quantity] = Json.format
   }
 
-  object ItemSerializerRegistry extends JsonSerializerRegistry {
+}
 
-    import Item._
-    override def serializers: Seq[JsonSerializer[_]] = Seq(
+final case class InventoryItem(itemId: String, quantity: Int)
 
-      JsonSerializer[Item]
-    )
-  }
+object InventoryItem {
+  implicit val format: Format[InventoryItem] = Json.format
+
+  // For case classes with hand-written companion objects, .tupled only works if
+  // you manually extend the correct Scala function type. See SI-3664 and SI-4808.
+  def tupled(t: (String, Int)) = InventoryItem(t._1, t._2)
 }
 
 
