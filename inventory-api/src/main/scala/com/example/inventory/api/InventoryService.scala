@@ -1,18 +1,10 @@
 package com.example.inventory.api
 
-import akka.Done
-import akka.NotUsed
-import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.Service
-import com.lightbend.lagom.scaladsl.api.ServiceCall
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.{Service, ServiceCall}
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer.JsValueMessageSerializer
+import com.lightbend.lagom.scaladsl.api.transport.Method
 import play.api.libs.json.{Format, Json}
-import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
-import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import play.api.libs.json.OFormat.oFormatFromReadsAndOWrites
-
-import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.immutable.Seq
 
 /**
  * The inventory service interface.
@@ -41,7 +33,7 @@ trait InventoryService extends Service {
 
     named("inventory")
       .withCalls(
-        restCall(Method.GET, "/inventory/:itemId", getItem _),
+     //   restCall(Method.GET, "/inventory/:itemId", getItem _),
         restCall(Method.GET, "/inventory", getAllItems _),
         restCall(Method.PUT, "/inventory/:itemId", updateStock _),
         restCall(Method.POST, "/inventory", addItem _)

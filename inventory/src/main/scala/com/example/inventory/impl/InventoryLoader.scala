@@ -26,7 +26,7 @@ class InventoryLoader extends LagomApplicationLoader {
 }
 
 trait InventoryComponents
-  extends LagomServerComponents
+    extends LagomServerComponents
     with SlickPersistenceComponents
     with HikariCPComponents
     with AhcWSComponents {
@@ -34,15 +34,13 @@ trait InventoryComponents
   implicit def executionContext: ExecutionContext
 
   // Bind the service that this server provides
-  override lazy val lagomServer: LagomServer =
-    serverFor[InventoryService](wire[InventoryServiceImpl])
+  override lazy val lagomServer: LagomServer = serverFor[InventoryService](wire[InventoryServiceImpl])
 
   // Register the JSON serializer registry
-  override lazy val jsonSerializerRegistry: JsonSerializerRegistry =
-    InventorySerializerRegistry
+  override lazy val jsonSerializerRegistry: JsonSerializerRegistry = InventorySerializerRegistry
 
-  lazy val reportRepository: InventoryRepository =
-    wire[InventoryRepository]
+  lazy val reportRepository: InventoryRepository = wire[InventoryRepository]
+
   readSide.register(wire[InventoryProcessor])
 
   clusterSharding.init(
@@ -53,6 +51,6 @@ trait InventoryComponents
 }
 
 abstract class InventoryApplication(context: LagomApplicationContext)
-  extends LagomApplication(context)
+    extends LagomApplication(context)
     with InventoryComponents
     with LagomKafkaComponents {}

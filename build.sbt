@@ -73,8 +73,6 @@ lazy val `shopping-cart` = (project in file("shopping-cart"))
 lazy val `inventory-api` = (project in file("inventory-api"))
   .settings(
     libraryDependencies ++= Seq(
-      lagomScaladslPersistenceJdbc,
-      lagomScaladslKafkaClient,
       lagomScaladslApi
     )
   )
@@ -84,12 +82,13 @@ lazy val inventory = (project in file("inventory"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceJdbc,
-      lagomScaladslKafkaClient,
       lagomScaladslKafkaBroker,
       lagomScaladslTestKit,
       macwire,
       scalaTest,
-      lagomScaladslAkkaDiscovery
+      postgresDriver,
+      lagomScaladslAkkaDiscovery,
+      akkaDiscoveryKubernetesApi,
     )
   )
   .settings(dockerSettings)
