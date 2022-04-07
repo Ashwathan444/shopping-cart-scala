@@ -13,3 +13,4 @@ bin
 .factorypath
 .settings
 logs
+*/**/**/*.iml
