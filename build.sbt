@@ -68,7 +68,7 @@ lazy val `shopping-cart` = (project in file("shopping-cart"))
   )
   .settings(dockerSettings)
   .settings(lagomForkedTestSettings)
-  .dependsOn(`shopping-cart-api`)
+  .dependsOn(`shopping-cart-api`,`inventory-api`)
 
 lazy val `inventory-api` = (project in file("inventory-api"))
   .settings(

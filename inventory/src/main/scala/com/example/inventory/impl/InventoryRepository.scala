@@ -15,9 +15,11 @@ class InventoryRepository(database: Database) {
   class InventoryTable(tag: Tag) extends Table[InventoryItem](tag, "inventory") {
     def itemId = column[String]("item_id", O.PrimaryKey)
 
+    def name = column[String]("name")
+
     def quantity = column[Int]("quantity")
 
-    def * = (itemId,quantity).mapTo[InventoryItem]
+    def * = (itemId,name,quantity).mapTo[InventoryItem]
   }
 
   val inventoryTable = TableQuery[InventoryTable]
@@ -27,32 +29,31 @@ class InventoryRepository(database: Database) {
   def findById(id: String): Future[Option[InventoryItem]] =
     database.run(findByIdQuery(id))
 
-  def createItem(itemId: String,quantity: Int): DBIO[Done] = {
-    findByIdQuery(itemId)
-      .flatMap {
-        case None => inventoryTable += InventoryItem(itemId, quantity)
-        case _    => DBIO.successful(Done)
-      }
-      .map(_ => Done)
-      .transactionally
+  def findAll(): Future[List[InventoryItem]] =
+    database.run(inventoryTable.result).map(rows => rows.toList)
+
+  def createItem(itemId: String, name: String, quantity: Int) = {
+    database.run(addStock(itemId,name,quantity))
   }
 
-  def addStock(itemId: String, q: Int): DBIO[Done] = {
-    findByIdQuery(itemId)
-      .flatMap {
-        case Some(item) => inventoryTable.insertOrUpdate(item.copy(quantity = item.quantity+q))
-        // if that happens we have a corrupted system
-        // cart checkout can only happens for a existing cart
-        case None => throw new RuntimeException(s"Didn't find item to update. CartID: $itemId")
-      }
-      .map(_ => Done)
-      .transactionally
+  def removeItem(itemId: String) = {
+    database.run(remove(itemId))
   }
 
-  private def findByIdQuery(cartId: String): DBIO[Option[InventoryItem]] =
+  def remove(itemId: String) = {
+    inventoryTable.filter(_.itemId === itemId).delete
+  }
+
+  def addStock(itemId: String, name:String, quantity: Int) = {
+    inventoryTable.insertOrUpdate(InventoryItem(itemId, name, quantity))
+  }
+
+  private def findByIdQuery(itemId: String): DBIO[Option[InventoryItem]] =
     inventoryTable
-      .filter(_.itemId === cartId)
+      .filter(_.itemId === itemId)
       .result
       .headOption
+
+
 
 }

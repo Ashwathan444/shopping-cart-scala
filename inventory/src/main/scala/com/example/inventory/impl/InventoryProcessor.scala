@@ -18,10 +18,15 @@ class InventoryProcessor(readSide: SlickReadSide, repository: InventoryRepositor
       .setGlobalPrepare(repository.createTable())
       .setEventHandler[ItemAdded] { envelope =>
         logger.info(s"$envelope added ")
-        repository.createItem(envelope.event.itemId, envelope.event.quantity)
+        repository.addStock(envelope.entityId,envelope.event.name, envelope.event.quantity)
       }
       .setEventHandler[StockUpdated] { envelope =>
-        DBIOAction.successful(Done)
+        logger.info(s"Updated quantity is ${envelope.event.newQuantity}")
+        repository.addStock(envelope.entityId,envelope.event.name,envelope.event.newQuantity)
+      }
+      .setEventHandler[ItemRemoved] { envelope =>
+        logger.info(s"$envelope added ")
+        repository.remove(envelope.entityId)
       }
       .build()
 

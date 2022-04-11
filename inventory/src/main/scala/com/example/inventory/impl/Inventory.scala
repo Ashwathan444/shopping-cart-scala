@@ -31,28 +31,30 @@ object Inventory {
 
   sealed trait InventoryCommand extends CommandSerializable
 
-  final case class AddItem(itemId: String, quantity: Int, replyTo: ActorRef[Confirmation]) extends InventoryCommand
+  final case class AddItem(name: String, quantity: Int, replyTo: ActorRef[Confirmation]) extends InventoryCommand
 
-  final case class UpdateStock(itemId: String, quantity: Int, replyTo: ActorRef[Confirmation]) extends InventoryCommand
+  final case class UpdateStock(quantity: Int, replyTo: ActorRef[Confirmation]) extends InventoryCommand
 
-  final case class GetAllItems(replyTo: ActorRef[Items]) extends InventoryCommand
+  final case class RemoveItem(itemId: String, replyTo: ActorRef[Confirmation]) extends InventoryCommand
 
-  final case class GetItem(replyTo: ActorRef[Items]) extends InventoryCommand
+  final case class GetAllItems(replyTo: ActorRef[Item]) extends InventoryCommand
+
+  final case class GetItem(itemId: String, replyTo: ActorRef[Confirmation]) extends InventoryCommand
 
   //INVENTORY REPLIES
 
-  final case class Items(items: Map[String,Int])
+  final case class Item(name: String,quantity: Int)
 
   sealed trait Confirmation
 
-  final case class Accepted(item: Items) extends Confirmation
+  final case class Accepted(item: Item) extends Confirmation
 
   final case class Rejected(reason: String) extends Confirmation
 
-  implicit val itemFormat: Format[Items]               = Json.format
+  implicit val itemFormat: Format[Item]                     = Json.format
   implicit val confirmationAcceptedFormat: Format[Accepted] = Json.format
   implicit val confirmationRejectedFormat: Format[Rejected] = Json.format
-  implicit val confirmationFormat: Format[Confirmation] = new Format[Confirmation] {
+  implicit val confirmationFormat: Format[Confirmation]     = new Format[Confirmation] {
     override def reads(json: JsValue): JsResult[Confirmation] = {
       if ((json \ "reason").isDefined)
         Json.fromJson[Rejected](json)
@@ -77,14 +79,17 @@ object Inventory {
     val Tag: AggregateEventShards[Event] = AggregateEventTag.sharded[Event](numShards = 10)
   }
 
-  final case class ItemAdded(itemId: String, quantity: Int) extends Event
+  final case class ItemAdded(name: String, quantity: Int) extends Event
 
-  final case class StockUpdated(itemId: String, newQuantity: Int) extends Event
+  final case class StockUpdated(name: String,newQuantity: Int) extends Event
+
+  final case class ItemRemoved(itemId: String) extends Event
 
   implicit val itemAddedFormat: Format[ItemAdded]                       = Json.format
-  implicit val stockUpdatedFormat: Format[StockUpdated]                   = Json.format
+  implicit val stockUpdatedFormat: Format[StockUpdated]                 = Json.format
+  implicit val itemRemovedFormat: Format[ItemRemoved]                       = Json.format
 
-  val empty: Inventory= Inventory(items = Map.empty)
+  val empty: Inventory= Inventory("",0)
 
   val typeKey: EntityTypeKey[InventoryCommand] = EntityTypeKey[InventoryCommand]("Inventory")
 
@@ -107,67 +112,86 @@ object Inventory {
 
 }
 
-final case class Inventory(items: Map[String,Int]) {
+final case class Inventory(name: String, quantity: Int) {
 
   import Inventory._
 
   def applyCommand(cmd: InventoryCommand): ReplyEffect[Event, Inventory] =
     cmd match {
-      case AddItem(itemId, quantity, replyTo) => onAddItem(itemId, quantity, replyTo)
-      case UpdateStock(itemId, quantity, replyTo) => onUpdateStock(itemId, quantity, replyTo)
+      case AddItem(name, quantity, replyTo) => onAddItem(name, quantity, replyTo)
+      case UpdateStock(quantity, replyTo) => onUpdateStock(quantity, replyTo)
+      case RemoveItem(id, replyTo) => onRemoveItem(id, replyTo)
       case GetAllItems(replyTo) => onGetAllItems(replyTo)
-      case GetItem(replyTo) => onGetItem(replyTo)
+      case GetItem(id,replyTo) => onGetItem(id,replyTo)
     }
 
   private def onAddItem(
-                         itemId: String,
+                         name: String,
                          quantity: Int,
                          replyTo: ActorRef[Confirmation]
                        ): ReplyEffect[Event, Inventory] = {
-    if (items.contains(itemId))
-      Effect.reply(replyTo)(Rejected(s"Item '$itemId' was already added to this inventory"))
-    else if (quantity <= 0)
+    if (quantity <= 0)
       Effect.reply(replyTo)(Rejected("Quantity must be greater than zero"))
     else
       Effect
-        .persist(ItemAdded(itemId, quantity))
+        .persist(ItemAdded(name, quantity))
         .thenReply(replyTo)(updatedInventory => Accepted(toItems(updatedInventory)))
   }
 
   private def onUpdateStock(
-                             itemId: String,
                              quantity: Int,
                              replyTo: ActorRef[Confirmation]
                            ): ReplyEffect[Event, Inventory] = {
     if (quantity <= 0)
       Effect.reply(replyTo)(Rejected("Quantity must be greater than zero"))
-    else if (items.contains(itemId))
-      Effect
-        .persist(StockUpdated(itemId, quantity))
-        .thenReply(replyTo)(updatedInventory => Accepted(toItems(updatedInventory)))
     else
-      Effect.reply(replyTo)(Rejected(s"Cannot adjust quantity for item '$itemId'. Item not present."))
+      Effect
+        .persist(StockUpdated(name,quantity))
+        .thenReply(replyTo)(updatedInventory => Accepted(toItems(updatedInventory)))
+
   }
 
-  private def onGetAllItems(replyTo: ActorRef[Items]): ReplyEffect[Event, Inventory] = {
+  private def onRemoveItem(
+                         id: String,
+                         replyTo: ActorRef[Confirmation]
+                       ): ReplyEffect[Event, Inventory] = {
+    if (name == "")
+      Effect.reply(replyTo)(Rejected("Item is not added"))
+    else
+      Effect
+        .persist(ItemRemoved(id))
+        .thenReply(replyTo)(updatedInventory => Accepted(toItems(updatedInventory)))
+
+  }
+
+  private def onGetAllItems(replyTo: ActorRef[Item]): ReplyEffect[Event, Inventory] = {
     reply(replyTo)(toItems(this))
   }
 
-  private def onGetItem(replyTo: ActorRef[Items]): ReplyEffect[Event, Inventory] = {
-    reply(replyTo)(toItems(this))
+  private def onGetItem(id: String, replyTo: ActorRef[Confirmation]): ReplyEffect[Event, Inventory] = {
+    if (name == "")
+      Effect.reply(replyTo)(Rejected("Item is not found"))
+    else
+      Effect.reply(replyTo)(Accepted(toItems(this)))
   }
 
-  private def toItems(inventory: Inventory): Items =
-    Items(inventory.items)
+  private def toItems(inventory: Inventory): Item =
+    Item(inventory.name,inventory.quantity)
 
   def applyEvent(evt: Event): Inventory =
     evt match {
-      case ItemAdded(itemId, quantity)    => onItemAddedOrUpdated(itemId, quantity)
-      case StockUpdated(itemId, quantity) => onItemAddedOrUpdated(itemId, quantity)
+      case ItemAdded(name, quantity)      => onItemAddedOrUpdated(name, quantity)
+      case StockUpdated(name,quantity)    => onItemAddedOrUpdated(name, quantity)
+      case ItemRemoved(id)                => onItemRemoved()
     }
 
-  private def onItemAddedOrUpdated(itemId: String, quantity: Int): Inventory =
-    copy(items = items + (itemId -> quantity))
+  private def onItemAddedOrUpdated(name: String, quantity: Int): Inventory = {
+    copy(name, quantity)
+  }
+
+  private def onItemRemoved(): Inventory = {
+    copy("",0)
+  }
 
 }
 
@@ -180,7 +204,8 @@ object InventorySerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[Inventory],
     JsonSerializer[ItemAdded],
     JsonSerializer[StockUpdated],
-    JsonSerializer[Items],
+    JsonSerializer[ItemRemoved],
+    JsonSerializer[Item],
     JsonSerializer[Confirmation],
     JsonSerializer[Accepted],
     JsonSerializer[Rejected],
