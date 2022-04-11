@@ -42,7 +42,7 @@ version in ThisBuild ~= (_.replace('+', '-'))
 dynver in ThisBuild ~= (_.replace('+', '-'))
 
 lazy val `shopping-cart-scala` = (project in file("."))
-  .aggregate(`shopping-cart-api`, `shopping-cart`, `inventory-api`, inventory)
+  .aggregate(`shopping-cart-api`, `shopping-cart`, `inventory-api`, `inventory`)
 
 lazy val `shopping-cart-api` = (project in file("shopping-cart-api"))
   .settings(
@@ -77,7 +77,7 @@ lazy val `inventory-api` = (project in file("inventory-api"))
     )
   )
 
-lazy val inventory = (project in file("inventory"))
+lazy val `inventory` = (project in file("inventory"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Seq(

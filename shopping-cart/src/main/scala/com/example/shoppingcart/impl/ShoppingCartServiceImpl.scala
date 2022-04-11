@@ -101,7 +101,7 @@ class ShoppingCartServiceImpl(
     (tag, fromOffset) =>
       persistentEntityRegistry
         .eventStream(tag, fromOffset)
-        .filter(rp => rp.event.isInstanceOf[CartCheckedOut] || rp.event.isInstanceOf[ItemAdded])
+        .filter(rp => rp.event.isInstanceOf[CartCheckedOut])
         .mapAsync(4) { case EventStreamElement(id, _, offset) =>
           logger.info(s"$tag message sent $offset")
           entityRef(id)

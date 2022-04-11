@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.api.Service
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import play.api.libs.json.Format
 import play.api.libs.json.Json
-import java.text.Normalizer.Form
+
 
 object ShoppingCartService {
   val TOPIC_NAME = "shopping-cart"

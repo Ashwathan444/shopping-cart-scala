@@ -1,6 +1,7 @@
 package com.example.inventory.impl
 
 import com.example.inventory.api.InventoryService
+import com.example.shoppingcart.api.ShoppingCartService
 import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
@@ -53,4 +54,6 @@ trait InventoryComponents
 abstract class InventoryApplication(context: LagomApplicationContext)
     extends LagomApplication(context)
     with InventoryComponents
-    with LagomKafkaComponents {}
+    with LagomKafkaComponents {
+  lazy val shoppingCartService = serviceClient.implement[ShoppingCartService]
+}
