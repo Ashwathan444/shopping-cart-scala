@@ -55,5 +55,5 @@ abstract class InventoryApplication(context: LagomApplicationContext)
     extends LagomApplication(context)
     with InventoryComponents
     with LagomKafkaComponents {
-  lazy val shoppingCartService = serviceClient.implement[ShoppingCartService]
+  lazy val shoppingCartService: ShoppingCartService = serviceClient.implement[ShoppingCartService]
 }

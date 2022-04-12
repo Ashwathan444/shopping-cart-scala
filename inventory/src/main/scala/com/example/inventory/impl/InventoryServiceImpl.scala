@@ -24,7 +24,7 @@ class InventoryServiceImpl(
     clusterSharding: ClusterSharding,
     persistentEntityRegistry: PersistentEntityRegistry,
     inventoryRepository: InventoryRepository,
-    shoppingCartService: ShoppingCartService
+    shoppingCartService: ShoppingCartService,
 )(implicit ec: ExecutionContext) extends InventoryService {
 
 
@@ -93,10 +93,10 @@ class InventoryServiceImpl(
   shoppingCartService.shoppingCartTopic.subscribe.atLeastOnce(Flow[ShoppingCartView].map { cart =>
     Future.sequence(
       cart.items.map { item =>
-      entityRef(item.itemId)
-        .ask(reply => UpdateStock(-item.quantity,reply))
-        .map(inventory => Done)
-    })
+        entityRef(item.itemId)
+          .ask(reply => UpdateStock(-item.quantity,reply))
+          .map(inventory => Done)
+      })
     Done
   })
 
