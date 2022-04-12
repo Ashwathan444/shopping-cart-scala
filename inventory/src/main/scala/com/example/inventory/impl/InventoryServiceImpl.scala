@@ -83,11 +83,11 @@ class InventoryServiceImpl(
         .mapAsync(4) { case EventStreamElement(itemId, _, offset) =>
           logger.info(s"$tag message sent $offset")
           entityRef(itemId)
-            .ask(reply => GetItem(itemId,reply))
-            .map(item => item match {
-              case Accepted(item)   => convertInventory(itemId, item) -> offset;
-              case _ => convertInventory(itemId, Item("",0)) -> offset;
-            })
+            .ask(reply => GetItem(itemId, reply))
+            .map {
+              case Accepted(item) => convertInventory(itemId, item) -> offset;
+              case _ => convertInventory(itemId, Item("", 0)) -> offset;
+            }
         }
   }
   shoppingCartService.shoppingCartTopic.subscribe.atLeastOnce(Flow[ShoppingCartView].map { cart =>
