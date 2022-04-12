@@ -22,7 +22,7 @@ class InventoryProcessor(readSide: SlickReadSide, repository: InventoryRepositor
       }
       .setEventHandler[StockUpdated] { envelope =>
         logger.info(s"Updated quantity is ${envelope.event.newQuantity}")
-        repository.addStock(envelope.entityId,envelope.event.name,envelope.event.newQuantity)
+        repository.updateStock(envelope.entityId,envelope.event.name,envelope.event.newQuantity)
       }
       .setEventHandler[ItemRemoved] { envelope =>
         logger.info(s"$envelope added ")

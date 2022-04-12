@@ -104,10 +104,10 @@ lazy val inventory = (project in file("inventory"))
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
 
-// Use Kafka server running in a docker container
 
 lagomKafkaCleanOnStart in ThisBuild := true
 lagomKafkaEnabled in ThisBuild := true
+lagomKafkaZookeeperPort in ThisBuild := 9999
 lagomServicesPortRange in ThisBuild := PortRange(30000, 35000)
 
 

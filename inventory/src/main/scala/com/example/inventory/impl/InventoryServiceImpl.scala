@@ -81,7 +81,7 @@ class InventoryServiceImpl(
         .eventStream(tag, fromOffset)
         .filter(eventStream => eventStream.event.isInstanceOf[ItemRemoved] || eventStream.event.isInstanceOf[ItemAdded])
         .mapAsync(4) { case EventStreamElement(itemId, _, offset) =>
-          logger.info(s"$tag message sent $offset")
+          logger.info(s" message sent from inventory $offset")
           entityRef(itemId)
             .ask(reply => GetItem(itemId, reply))
             .map {
@@ -93,6 +93,7 @@ class InventoryServiceImpl(
   shoppingCartService.shoppingCartTopic.subscribe.atLeastOnce(Flow[ShoppingCartView].map { cart =>
     Future.sequence(
       cart.items.map { item =>
+        logger.info(s"message received by inventory $item")
         entityRef(item.itemId)
           .ask(reply => UpdateStock(-item.quantity,reply))
           .map(inventory => Done)

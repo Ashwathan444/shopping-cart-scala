@@ -10,7 +10,6 @@ import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.Effect.reply
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplyEffect
-import com.example.shoppingcart.api.ItemCount
 import com.lightbend.lagom.scaladsl.persistence.AggregateEvent
 import com.lightbend.lagom.scaladsl.persistence.AggregateEventShards
 import com.lightbend.lagom.scaladsl.persistence.AggregateEventTag
@@ -115,7 +114,6 @@ object Inventory {
 final case class Inventory(name: String, quantity: Int) {
 
   import Inventory._
-
   def applyCommand(cmd: InventoryCommand): ReplyEffect[Event, Inventory] =
     cmd match {
       case AddItem(name, quantity, replyTo) => onAddItem(name, quantity, replyTo)
@@ -142,8 +140,8 @@ final case class Inventory(name: String, quantity: Int) {
                              quantity: Int,
                              replyTo: ActorRef[Confirmation]
                            ): ReplyEffect[Event, Inventory] = {
-    if (quantity <= 0)
-      Effect.reply(replyTo)(Rejected("Quantity must be greater than zero"))
+    if (quantity+this.quantity < 0)
+      Effect.reply(replyTo)(Rejected("Quantity must be lesser"))
     else
       Effect
         .persist(StockUpdated(name,quantity))
@@ -180,13 +178,17 @@ final case class Inventory(name: String, quantity: Int) {
 
   def applyEvent(evt: Event): Inventory =
     evt match {
-      case ItemAdded(name, quantity)      => onItemAddedOrUpdated(name, quantity)
-      case StockUpdated(name,quantity)    => onItemAddedOrUpdated(name, quantity)
+      case ItemAdded(name, quantity)      => onItemAdded(name, quantity)
+      case StockUpdated(name,quantity)    => onItemUpdated(name, quantity)
       case ItemRemoved(id)                => onItemRemoved()
     }
 
-  private def onItemAddedOrUpdated(name: String, quantity: Int): Inventory = {
+  private def onItemAdded(name: String, quantity: Int): Inventory = {
     copy(name, quantity)
+  }
+
+  private def onItemUpdated(name: String, quantity: Int): Inventory = {
+    copy(name, quantity+this.quantity)
   }
 
   private def onItemRemoved(): Inventory = {

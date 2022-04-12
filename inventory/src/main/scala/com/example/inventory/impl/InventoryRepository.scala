@@ -1,8 +1,5 @@
 package com.example.inventory.impl
 
-import java.time.Instant
-
-import akka.Done
 import com.example.inventory.api.InventoryItem
 import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
@@ -47,13 +44,16 @@ class InventoryRepository(database: Database) {
   def addStock(itemId: String, name:String, quantity: Int) = {
     inventoryTable.insertOrUpdate(InventoryItem(itemId, name, quantity))
   }
+  def updateStock(itemId: String, name:String, quantity: Int) = {
+
+    sqlu"update inventory set quantity = quantity + ${quantity} where item_id::varchar(50) = ${itemId}"
+  }
+
 
   private def findByIdQuery(itemId: String): DBIO[Option[InventoryItem]] =
     inventoryTable
       .filter(_.itemId === itemId)
       .result
       .headOption
-
-
 
 }

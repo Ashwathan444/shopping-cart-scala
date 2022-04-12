@@ -105,7 +105,7 @@ class ShoppingCartServiceImpl(
         .eventStream(tag, fromOffset)
         .filter(rp => rp.event.isInstanceOf[CartCheckedOut])
         .mapAsync(4) { case EventStreamElement(id, _, offset) =>
-          logger.info(s"$tag message sent $offset")
+          logger.info(s"message sent from shopping cart $offset")
           entityRef(id)
             .ask(reply => Get(reply))
             .map(cart => convertShoppingCart(id, cart) -> offset)
