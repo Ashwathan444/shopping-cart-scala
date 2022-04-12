@@ -6,7 +6,7 @@ import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.example.inventory.api.{InventoryItem, InventoryService}
 import com.example.inventory.impl.Inventory._
-import com.example.shoppingcart.api.{ShoppingCartView,ShoppingCartService}
+import com.example.shoppingcart.api.{ShoppingCartService, ShoppingCartView}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.BadRequest
@@ -85,20 +85,18 @@ class InventoryServiceImpl(
           entityRef(itemId)
             .ask(reply => GetItem(itemId,reply))
             .map(item => item match {
-              case Accepted(item)   => convertInventory(itemId, item) -> offset)
-              case _ => convertInventory(itemId, Item("",0)) -> offset)
+              case Accepted(item)   => convertInventory(itemId, item) -> offset;
+              case _ => convertInventory(itemId, Item("",0)) -> offset;
             })
         }
   }
   shoppingCartService.shoppingCartTopic.subscribe.atLeastOnce(Flow[ShoppingCartView].map { cart =>
-    // Since this is at least once event handling, we really should track by shopping cart, and
-    // not update inventory if we've already seen this shopping cart. But this is an in memory
-    // inventory tracker anyway, so no need to be that careful.
-    cart.items.foreach { item =>
+    Future.sequence(
+      cart.items.map { item =>
       entityRef(item.itemId)
         .ask(reply => UpdateStock(-item.quantity,reply))
         .map(inventory => Done)
-    }
+    })
     Done
   })
 

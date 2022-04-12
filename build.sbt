@@ -81,6 +81,7 @@ lazy val `inventory` = (project in file("inventory"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Seq(
+      lagomScaladslKafkaClient,
       lagomScaladslPersistenceJdbc,
       lagomScaladslKafkaBroker,
       lagomScaladslTestKit,

@@ -57,4 +57,6 @@ trait ShoppingCartComponents
 abstract class ShoppingCartApplication(context: LagomApplicationContext)
     extends LagomApplication(context)
     with ShoppingCartComponents
-    with LagomKafkaComponents {}
+    with LagomKafkaComponents {
+
+}
