@@ -8,10 +8,14 @@ import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
-import play.api.db.HikariCPComponents
+import play.api.db.{DBComponents, HikariCPComponents}
 import play.api.libs.ws.ahc.AhcWSComponents
 import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.stream.Materializer
+import com.lightbend.lagom.scaladsl.api.LagomConfigComponent
+import com.lightbend.lagom.scaladsl.client.LagomServiceClientComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
+import play.api.Environment
 
 import scala.concurrent.ExecutionContext
 
@@ -29,10 +33,17 @@ class InventoryLoader extends LagomApplicationLoader {
 trait InventoryComponents
     extends LagomServerComponents
     with SlickPersistenceComponents
-    with HikariCPComponents
-    with AhcWSComponents {
+      with DBComponents
+      with LagomConfigComponent
+      with HikariCPComponents
+      with AhcWSComponents
+      with LagomServiceClientComponents {
 
   implicit def executionContext: ExecutionContext
+
+  def environment: Environment
+
+  implicit def materializer: Materializer
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[InventoryService](wire[InventoryServiceImpl])
@@ -43,6 +54,7 @@ trait InventoryComponents
   lazy val reportRepository: InventoryRepository = wire[InventoryRepository]
 
   readSide.register(wire[InventoryProcessor])
+  lazy val shoppingCartService = serviceClient.implement[ShoppingCartService]
 
   clusterSharding.init(
     Entity(Inventory.typeKey) { entityContext =>
@@ -55,5 +67,4 @@ abstract class InventoryApplication(context: LagomApplicationContext)
     extends LagomApplication(context)
     with InventoryComponents
     with LagomKafkaComponents {
-  lazy val shoppingCartService: ShoppingCartService = serviceClient.implement[ShoppingCartService]
 }

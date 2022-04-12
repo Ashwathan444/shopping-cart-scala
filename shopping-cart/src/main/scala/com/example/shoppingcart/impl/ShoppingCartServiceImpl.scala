@@ -1,6 +1,7 @@
 package com.example.shoppingcart.impl
 
 import akka.NotUsed
+import com.example.inventory.api.InventoryService
 import com.example.shoppingcart.api.{ItemCount, Quantity, ShoppingCartItem, ShoppingCartReport, ShoppingCartService, ShoppingCartView}
 import com.example.shoppingcart.impl.ShoppingCart._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -25,7 +26,8 @@ import org.slf4j.LoggerFactory
 class ShoppingCartServiceImpl(
     clusterSharding: ClusterSharding,
     persistentEntityRegistry: PersistentEntityRegistry,
-    reportRepository: ShoppingCartReportRepository
+    reportRepository: ShoppingCartReportRepository,
+    inventoryService: InventoryService
 )(implicit ec: ExecutionContext)
     extends ShoppingCartService {
 

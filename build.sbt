@@ -41,20 +41,32 @@ def getDockerBaseImage(): String = sys.props.get("java.version") match {
 version in ThisBuild ~= (_.replace('+', '-'))
 dynver in ThisBuild ~= (_.replace('+', '-'))
 
-lazy val `shopping-cart-scala` = (project in file("."))
-  .aggregate(`shopping-cart-api`, `shopping-cart`, `inventory-api`, `inventory`)
+lazy val root = (project in file("."))
+  .settings(name := "shopping-cart-scala")
+  .aggregate(shoppingCartApi, shoppingCart,
+    inventoryApi, inventory)
 
-lazy val `shopping-cart-api` = (project in file("shopping-cart-api"))
+lazy val shoppingCartApi = (project in file("shopping-cart-api"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslApi
     )
   )
 
-lazy val `shopping-cart` = (project in file("shopping-cart"))
-  .enablePlugins(LagomScala)
+lazy val inventoryApi = (project in file("inventory-api"))
   .settings(
     libraryDependencies ++= Seq(
+      lagomScaladslApi
+    )
+  )
+
+
+lazy val shoppingCart = (project in file("shopping-cart"))
+  .enablePlugins(LagomScala)
+  .dependsOn(shoppingCartApi,inventoryApi)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslKafkaClient,
       lagomScaladslPersistenceJdbc,
       lagomScaladslKafkaBroker,
       lagomScaladslTestKit,
@@ -68,17 +80,12 @@ lazy val `shopping-cart` = (project in file("shopping-cart"))
   )
   .settings(dockerSettings)
   .settings(lagomForkedTestSettings)
-  .dependsOn(`shopping-cart-api`,`inventory-api`)
 
-lazy val `inventory-api` = (project in file("inventory-api"))
-  .settings(
-    libraryDependencies ++= Seq(
-      lagomScaladslApi
-    )
-  )
 
-lazy val `inventory` = (project in file("inventory"))
+
+lazy val inventory = (project in file("inventory"))
   .enablePlugins(LagomScala)
+  .dependsOn(shoppingCartApi,inventoryApi)
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslKafkaClient,
@@ -93,7 +100,6 @@ lazy val `inventory` = (project in file("inventory"))
     )
   )
   .settings(dockerSettings)
-  .dependsOn(`inventory-api`, `shopping-cart-api`)
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
