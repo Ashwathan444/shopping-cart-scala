@@ -42,7 +42,7 @@ object Inventory {
 
   //INVENTORY REPLIES
 
-  final case class Item(name: String,quantity: Int)
+  final case class Item(name: String, quantity: Int, reserved: Int)
 
   sealed trait Confirmation
 
@@ -88,7 +88,7 @@ object Inventory {
   implicit val stockUpdatedFormat: Format[StockUpdated]                 = Json.format
   implicit val itemRemovedFormat: Format[ItemRemoved]                       = Json.format
 
-  val empty: Inventory= Inventory("",0)
+  val empty: Inventory= Inventory("",0,0)
 
   val typeKey: EntityTypeKey[InventoryCommand] = EntityTypeKey[InventoryCommand]("Inventory")
 
@@ -111,7 +111,7 @@ object Inventory {
 
 }
 
-final case class Inventory(name: String, quantity: Int) {
+final case class Inventory(name: String, quantity: Int, reserved:Int) {
 
   import Inventory._
   def applyCommand(cmd: InventoryCommand): ReplyEffect[Event, Inventory] =
@@ -174,7 +174,7 @@ final case class Inventory(name: String, quantity: Int) {
   }
 
   private def toItems(inventory: Inventory): Item =
-    Item(inventory.name,inventory.quantity)
+    Item(inventory.name,inventory.quantity,inventory.reserved)
 
   def applyEvent(evt: Event): Inventory =
     evt match {
@@ -184,15 +184,15 @@ final case class Inventory(name: String, quantity: Int) {
     }
 
   private def onItemAdded(name: String, quantity: Int): Inventory = {
-    copy(name, quantity)
+    copy(name, quantity, 0)
   }
 
   private def onItemUpdated(name: String, quantity: Int): Inventory = {
-    copy(name, quantity+this.quantity)
+    copy(name, quantity+this.quantity, this.reserved)
   }
 
   private def onItemRemoved(): Inventory = {
-    copy("",0)
+    copy("",0, 0)
   }
 
 }

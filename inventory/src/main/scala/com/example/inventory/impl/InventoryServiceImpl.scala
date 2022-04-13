@@ -79,14 +79,14 @@ class InventoryServiceImpl(
     (tag, fromOffset) =>
       persistentEntityRegistry
         .eventStream(tag, fromOffset)
-        .filter(eventStream => eventStream.event.isInstanceOf[ItemRemoved] || eventStream.event.isInstanceOf[ItemAdded])
+        .filter(eventStream => eventStream.event.isInstanceOf[ItemRemoved])
         .mapAsync(4) { case EventStreamElement(itemId, _, offset) =>
           logger.info(s" message sent from inventory $offset")
           entityRef(itemId)
             .ask(reply => GetItem(itemId, reply))
             .map {
               case Accepted(item) => convertInventory(itemId, item) -> offset;
-              case _ => convertInventory(itemId, Item("", 0)) -> offset;
+              case _ => convertInventory(itemId, Item("", 0, 0)) -> offset;
             }
         }
   }
@@ -105,7 +105,8 @@ class InventoryServiceImpl(
     InventoryItem(
       id,
       item.name,
-      item.quantity
+      item.quantity,
+      item.reserved
     )
   }
 

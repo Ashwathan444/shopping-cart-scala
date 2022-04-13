@@ -68,14 +68,14 @@ trait InventoryService extends Service {
 
 }
 
-final case class InventoryItem(itemId: String,name: String, quantity: Int)
+final case class InventoryItem(itemId: String,name: String, quantity: Int, reserved: Int)
 
 object InventoryItem {
   implicit val format: Format[InventoryItem] = Json.format
 
   // For case classes with hand-written companion objects, .tupled only works if
   // you manually extend the correct Scala function type. See SI-3664 and SI-4808.
-  def tupled(t: (String, String, Int)) = InventoryItem(t._1, t._2, t._3)
+  def tupled(t: (String, String, Int, Int)) = InventoryItem(t._1, t._2, t._3, t._4)
 }
 
 

@@ -16,7 +16,9 @@ class InventoryRepository(database: Database) {
 
     def quantity = column[Int]("quantity")
 
-    def * = (itemId,name,quantity).mapTo[InventoryItem]
+    def reserved = column[Int]("quantity")
+
+    def * = (itemId,name,quantity,reserved).mapTo[InventoryItem]
   }
 
   val inventoryTable = TableQuery[InventoryTable]
@@ -29,8 +31,8 @@ class InventoryRepository(database: Database) {
   def findAll(): Future[List[InventoryItem]] =
     database.run(inventoryTable.result).map(rows => rows.toList)
 
-  def createItem(itemId: String, name: String, quantity: Int) = {
-    database.run(addStock(itemId,name,quantity))
+  def createItem(itemId: String, name: String, quantity: Int, reserved: Int) = {
+    database.run(addStock(itemId,name,quantity,reserved))
   }
 
   def removeItem(itemId: String) = {
@@ -41,10 +43,10 @@ class InventoryRepository(database: Database) {
     inventoryTable.filter(_.itemId === itemId).delete
   }
 
-  def addStock(itemId: String, name:String, quantity: Int) = {
-    inventoryTable.insertOrUpdate(InventoryItem(itemId, name, quantity))
+  def addStock(itemId: String, name:String, quantity: Int, reserved:Int) = {
+    inventoryTable.insertOrUpdate(InventoryItem(itemId, name, quantity, reserved))
   }
-  def updateStock(itemId: String, name:String, quantity: Int) = {
+  def updateStock(itemId: String, quantity: Int) = {
 
     sqlu"update inventory set quantity = quantity + ${quantity} where item_id::varchar(50) = ${itemId}"
   }
