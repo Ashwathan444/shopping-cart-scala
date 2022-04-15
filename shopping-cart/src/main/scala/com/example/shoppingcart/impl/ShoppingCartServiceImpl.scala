@@ -1,7 +1,7 @@
 package com.example.shoppingcart.impl
 
-import akka.NotUsed
-import com.example.inventory.api.InventoryService
+import akka.{Done, NotUsed}
+import com.example.inventory.api.{InventoryItem, InventoryService}
 import com.example.shoppingcart.api.{ItemCount, Quantity, ShoppingCartItem, ShoppingCartReport, ShoppingCartService, ShoppingCartView}
 import com.example.shoppingcart.impl.ShoppingCart._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -12,12 +12,13 @@ import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.EventStreamElement
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 
 import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.cluster.sharding.typed.scaladsl.EntityRef
+import akka.stream.scaladsl.Flow
 import org.slf4j.LoggerFactory
 
 /**
@@ -103,14 +104,27 @@ class ShoppingCartServiceImpl(
     (tag, fromOffset) =>
       persistentEntityRegistry
         .eventStream(tag, fromOffset)
-        .filter(rp => rp.event.isInstanceOf[CartCheckedOut])
+        .filter(rp => rp.event.isInstanceOf[CartCheckedOut] || rp.event.isInstanceOf[ItemAdded])
         .mapAsync(4) { case EventStreamElement(id, _, offset) =>
-          logger.info(s"message sent from shopping cart $offset")
+          logger.info(s"Cart message sent from shopping cart $offset")
           entityRef(id)
             .ask(reply => Get(reply))
             .map(cart => convertShoppingCart(id, cart) -> offset)
         }
   }
+
+  inventoryService.inventoryTopic.subscribe.atLeastOnce(Flow[InventoryItem].map { item =>
+
+        logger.info(s"message received by shopping cart - $item")
+        reportRepository.findAll().map(x => x.foreach( cart=>
+          entityRef(cart.cartId)
+            .ask(reply => RemoveItem(item.itemId, reply))
+            .map { confirmation =>
+              confirmationToResult(cart.cartId, confirmation)
+            }
+        ))
+        Done
+  })
 
   private def convertShoppingCart(id: String, cartSummary: Summary) = {
 

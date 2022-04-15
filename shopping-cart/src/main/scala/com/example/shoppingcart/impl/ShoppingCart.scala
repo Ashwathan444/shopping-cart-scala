@@ -53,6 +53,8 @@ object ShoppingCart {
   final case class GetItemCount(replyTo: ActorRef[Summary]) extends Command
 
   // SHOPPING CART REPLIES
+  final case class Item(itemId: String, quantity: Int)
+
   final case class Summary(items: Map[String,Int], checkedOut: Boolean)
 
   sealed trait Confirmation
@@ -60,6 +62,7 @@ object ShoppingCart {
   final case class Accepted(summary: Summary) extends Confirmation
 
   final case class Rejected(reason: String) extends Confirmation
+
 
   implicit val summaryFormat: Format[Summary]               = Json.format
   implicit val confirmationAcceptedFormat: Format[Accepted] = Json.format
@@ -241,14 +244,15 @@ final case class ShoppingCart(items: Map[String,Int], checkedOutTime: Option[Ins
   private def toSummaryCount(shoppingCart: ShoppingCart): Summary =
     Summary(shoppingCart.items, shoppingCart.checkedOut)
 
+
   // we don't make a distinction of checked or open for the event handler
   // because a checked-out cart will never persist any new event
   def applyEvent(evt: Event): ShoppingCart =
     evt match {
-      case ItemAdded(itemId, quantity)            => onItemAddedOrUpdated(itemId, quantity)
+      case ItemAdded(itemId, quantity)            => onItemAdded(itemId, quantity)
       case ItemRemoved(itemId)                    => onItemRemoved(itemId)
       case AllItemsRemoved(id)                    => onAllItemsRemoved(id)
-      case ItemQuantityAdjusted(itemId, quantity) => onItemAddedOrUpdated(itemId, quantity)
+      case ItemQuantityAdjusted(itemId, quantity) => onItemUpdated(itemId, quantity)
       case CartCheckedOut(checkedOutTime)         => onCartCheckedOut(checkedOutTime)
     }
 
@@ -256,8 +260,13 @@ final case class ShoppingCart(items: Map[String,Int], checkedOutTime: Option[Ins
 
   private def onAllItemsRemoved(id: String): ShoppingCart = copy(items = Map())
 
-  private def onItemAddedOrUpdated(itemId: String, quantity: Int): ShoppingCart =
+  def onItemAdded(itemId: String, quantity: Int): ShoppingCart = {
     copy(items = items + (itemId -> quantity))
+  }
+
+  private def onItemUpdated(itemId: String, quantity: Int) = {
+    copy(items = items + (itemId -> quantity))
+  }
 
   private def onCartCheckedOut(checkedOutTime: Instant): ShoppingCart = {
     copy(checkedOutTime = Option(checkedOutTime))

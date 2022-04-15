@@ -32,6 +32,11 @@ class ShoppingCartReportRepository(database: Database) {
 
   def createTable() = reportTable.schema.createIfNotExists
 
+  def deleteAll() = reportTable.delete
+
+  def findAll(): Future[List[ShoppingCartReport]] =
+    database.run(reportTable.result).map(rows => rows.toList)
+
   def findById(id: String): Future[Option[ShoppingCartReport]] =
     database.run(findByIdQuery(id))
 

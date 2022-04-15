@@ -76,6 +76,7 @@ trait ShoppingCartService extends Service {
    */
   def shoppingCartTopic: Topic[ShoppingCartView]
 
+
   final override def descriptor = {
     import Service._
     // @formatter:off
@@ -92,11 +93,6 @@ trait ShoppingCartService extends Service {
       )
       .withTopics(
         topic(ShoppingCartService.TOPIC_NAME, shoppingCartTopic)
-          // Kafka partitions messages, messages within the same partition will
-          // be delivered in order, to ensure that all messages for the same user
-          // go to the same partition (and hence are delivered in order with respect
-          // to that user), we configure a partition key strategy that extracts the
-          // name as the partition key.
           .addProperty(
             KafkaProperties.partitionKeyStrategy,
             PartitionKeyStrategy[ShoppingCartView](_.id)

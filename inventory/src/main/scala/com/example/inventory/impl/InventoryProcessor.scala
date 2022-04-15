@@ -17,7 +17,7 @@ class InventoryProcessor(readSide: SlickReadSide, repository: InventoryRepositor
       .builder[Event]("inventory-offset")
       .setGlobalPrepare(repository.createTable())
       .setEventHandler[ItemAdded] { envelope =>
-        logger.info(s"$envelope added ")
+        logger.info(s"${envelope} added ")
         repository.addStock(envelope.entityId,envelope.event.name, envelope.event.quantity, 0)
       }
       .setEventHandler[StockUpdated] { envelope =>

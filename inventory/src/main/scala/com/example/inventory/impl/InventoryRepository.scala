@@ -1,8 +1,9 @@
 package com.example.inventory.impl
 
 import com.example.inventory.api.InventoryItem
-import slick.dbio.DBIO
+import slick.dbio.{DBIO, Effect}
 import slick.jdbc.PostgresProfile.api._
+import slick.sql.{FixedSqlAction, SqlAction}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -16,7 +17,7 @@ class InventoryRepository(database: Database) {
 
     def quantity = column[Int]("quantity")
 
-    def reserved = column[Int]("quantity")
+    def reserved = column[Int]("reserved")
 
     def * = (itemId,name,quantity,reserved).mapTo[InventoryItem]
   }
@@ -43,10 +44,10 @@ class InventoryRepository(database: Database) {
     inventoryTable.filter(_.itemId === itemId).delete
   }
 
-  def addStock(itemId: String, name:String, quantity: Int, reserved:Int) = {
+  def addStock(itemId: String, name:String, quantity: Int, reserved:Int): FixedSqlAction[Int, NoStream, Effect.Write] = {
     inventoryTable.insertOrUpdate(InventoryItem(itemId, name, quantity, reserved))
   }
-  def updateStock(itemId: String, quantity: Int) = {
+  def updateStock(itemId: String, quantity: Int): SqlAction[Int, NoStream, Effect] = {
 
     sqlu"update inventory set quantity = quantity + ${quantity} where item_id::varchar(50) = ${itemId}"
   }
